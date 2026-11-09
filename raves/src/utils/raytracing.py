@@ -13,6 +13,11 @@ EPS_ZFIGHT = 1e-5  # tie-breaker window for Z-fighting
 EPS_SELFHIT = 1e-7  # reject hits too close to the ray origin
 
 
+# https://github.com/numpy/numpy/issues/26620#issuecomment-2150748569
+def cross2d(a, b):
+    return a[..., 0] * b[..., 1] - a[..., 1] * b[..., 0]
+
+
 class TriangleMesh:
     """
     Structure-of-Arrays (SoA) container for triangle meshes used by the tracing kernels.
@@ -182,9 +187,10 @@ class TriangleMesh:
         #   ax, ay = (0, 0) (the reference vertex v_1 is the origin of the lattice)
         #   bx, by = edge_1_2D
         #   cx, cy = edge_2_2D
-        side_1 = np.cross(lattice_2D - edge_1_2D, -edge_1_2D)
-        side_2 = np.cross(lattice_2D - edge_2_2D, edge_1_2D - edge_2_2D)
-        side_3 = np.cross(lattice_2D, edge_2_2D)
+        # https://github.com/numpy/numpy/issues/26620#issuecomment-2150748569
+        side_1 = cross2d(lattice_2D - edge_1_2D, -edge_1_2D)
+        side_2 = cross2d(lattice_2D - edge_2_2D, edge_1_2D - edge_2_2D)
+        side_3 = cross2d(lattice_2D, edge_2_2D)
 
         all_non_neg = (side_1 >= -EPS_EDGE) & (side_2 >= -EPS_EDGE) & (side_3 >= -EPS_EDGE)
         all_non_pos = (side_1 <= +EPS_EDGE) & (side_2 <= +EPS_EDGE) & (side_3 <= +EPS_EDGE)
